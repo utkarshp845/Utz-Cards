@@ -1,36 +1,78 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# UtzCards
 
-## Getting Started
+Sports card intake, identification, pricing, and fulfillment — an operations tool
+for a working card business, built as a way to learn RAG, vector search,
+multi-source data integration, and agentic tool use.
 
-First, run the development server:
+## Setup
+
+Requires Node 20.9+ and Docker.
 
 ```bash
+npm install
+cp .env.example .env.local   # then fill in the keys
+npm run db:up                # Postgres 17 + pgvector on :5433
+npm run db:migrate
+npm run check:db             # verifies extensions, tables, cosine operator
+npm run check:anthropic      # verifies the Claude key path
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+`ANTHROPIC_API_KEY` ([console](https://platform.claude.com/settings/keys)) and
+`VOYAGE_API_KEY` ([dashboard](https://dashboard.voyageai.com/)) are needed from
+M1 onward. eBay and EasyPost keys aren't needed until M4 and M6.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Scripts
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| Command | What it does |
+| --- | --- |
+| `npm run dev` | Next dev server (Turbopack) |
+| `npm run build` | Production build |
+| `npm run typecheck` | `tsc --noEmit` |
+| `npm run lint` | ESLint |
+| `npm run db:up` / `db:down` | Start / stop Postgres |
+| `npm run db:reset` | **Destroys the volume** and re-inits from scratch |
+| `npm run db:generate` | Generate a migration from `db/schema.ts` |
+| `npm run db:migrate` | Apply pending migrations |
+| `npm run db:studio` | Drizzle Studio |
+| `npm run check:db` | Database smoke test |
+| `npm run check:anthropic` | Claude connectivity smoke test |
 
-## Learn More
+## Layout
 
-To learn more about Next.js, take a look at the following resources:
+```
+app/            Next.js App Router pages
+db/
+  schema.ts     Drizzle schema — start here to understand the data model
+  init/         SQL run once at container init (creates pgvector, pg_trgm)
+  migrations/   Generated; do not hand-edit
+lib/
+  anthropic.ts  Claude client, model constant, refusal handling
+  env.ts        Env access with loud failures
+scripts/        One-off / operational scripts (run via tsx)
+docs/concepts/  Explainers for the AI concepts, written per milestone
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Notes for future work
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+**Sports card data is the hard case.** Unlike Magic or Pokémon there is no free,
+clean catalog + price API:
 
-## Deploy on Vercel
+- eBay **Marketplace Insights** (sold comps) is a Limited Release, closed to new
+  developers. eBay **Browse** (active listings) is available on a standard
+  account at ~5,000 calls/day — but those are *asks*, not *solds*.
+- **PSA**'s public API was cut to ~1 call/day for free tokens in mid-2026; pop
+  reports were never exposed. A paid plan is required for real use.
+- **SportsCardsPro** publishes a prices API + CSVs; access terms still to be
+  confirmed.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+This is why `price_observations.kind` distinguishes `ask` from `sold`, and why
+the UI must always show a price's source and age. Do not average the two into a
+single "market value" — the data doesn't support that claim.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+We deliberately do not scrape TCDB or PSA. That's a terms-of-service risk for a
+business that depends on this tool.
+
+## Status
+
+M0 (foundation) is done. See the roadmap on the home page.

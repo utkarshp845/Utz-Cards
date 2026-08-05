@@ -1,0 +1,24 @@
+services:
+  db:
+    # pgvector ships prebuilt images tracking each Postgres major.
+    image: pgvector/pgvector:pg17
+    container_name: utzcards-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: utzcards
+      POSTGRES_PASSWORD: utzcards
+      POSTGRES_DB: utzcards
+    ports:
+      - "5433:5432"
+    volumes:
+      - utzcards-pgdata:/var/lib/postgresql/data
+      # Runs once, on first init of an empty data volume.
+      - ./db/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U utzcards -d utzcards"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+volumes:
+  utzcards-pgdata:

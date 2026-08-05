@@ -1,69 +1,124 @@
-import Image from "next/image";
+import { sql } from "drizzle-orm";
 
-export default function Home() {
+import { db } from "@/db";
+import { cards, cardEmbeddings, inventory } from "@/db/schema";
+
+// Always hit the database — this is a live status view, not a static page.
+export const dynamic = "force-dynamic";
+
+type Health =
+  | { ok: true; cards: number; embeddings: number; inventory: number }
+  | { ok: false; error: string };
+
+async function getHealth(): Promise<Health> {
+  try {
+    const [row] = await db
+      .select({
+        cards: sql<number>`(select count(*) from ${cards})::int`,
+        embeddings: sql<number>`(select count(*) from ${cardEmbeddings})::int`,
+        inventory: sql<number>`(select count(*) from ${inventory})::int`,
+      })
+      .from(sql`(select 1) as _`);
+
+    return { ok: true, ...row };
+  } catch (error) {
+    return {
+      ok: false,
+      error: error instanceof Error ? error.message : String(error),
+    };
+  }
+}
+
+const MILESTONES = [
+  { id: "M0", name: "Foundation", done: true },
+  { id: "M1", name: "Embeddings + vector search", done: false },
+  { id: "M2", name: "Hybrid retrieval + evals", done: false },
+  { id: "M3", name: "Vision intake", done: false },
+  { id: "M4", name: "Multi-source pricing", done: false },
+  { id: "M5", name: "Agentic assistant", done: false },
+  { id: "M6", name: "Shipping", done: false },
+];
+
+export default async function Home() {
+  const health = await getHealth();
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
+    <main className="mx-auto w-full max-w-2xl flex-1 px-6 py-16">
+      <h1 className="text-2xl font-semibold tracking-tight">UtzCards</h1>
+      <p className="mt-1 text-sm text-black/60 dark:text-white/60">
+        Sports card intake, identification, pricing, and fulfillment.
+      </p>
+
+      <section className="mt-10">
+        <h2 className="text-xs font-medium uppercase tracking-wider text-black/50 dark:text-white/50">
+          Database
+        </h2>
+        {health.ok ? (
+          <dl className="mt-3 grid grid-cols-3 gap-3">
+            {[
+              { label: "Catalog cards", value: health.cards },
+              { label: "Embeddings", value: health.embeddings },
+              { label: "Inventory", value: health.inventory },
+            ].map((stat) => (
+              <div
+                key={stat.label}
+                className="rounded-lg border border-black/10 p-4 dark:border-white/15"
+              >
+                <dt className="text-xs text-black/55 dark:text-white/55">
+                  {stat.label}
+                </dt>
+                <dd className="mt-1 font-mono text-xl tabular-nums">
+                  {stat.value.toLocaleString()}
+                </dd>
+              </div>
+            ))}
+          </dl>
+        ) : (
+          <div className="mt-3 rounded-lg border border-red-500/30 bg-red-500/5 p-4">
+            <p className="text-sm font-medium text-red-600 dark:text-red-400">
+              Cannot reach the database
+            </p>
+            <p className="mt-1 break-all font-mono text-xs text-red-600/80 dark:text-red-400/80">
+              {health.error}
+            </p>
+            <p className="mt-2 text-xs text-black/60 dark:text-white/60">
+              Try <code className="font-mono">npm run db:up</code>, then{" "}
+              <code className="font-mono">npm run db:migrate</code>.
+            </p>
+          </div>
+        )}
+      </section>
+
+      <section className="mt-10">
+        <h2 className="text-xs font-medium uppercase tracking-wider text-black/50 dark:text-white/50">
+          Roadmap
+        </h2>
+        <ul className="mt-3 divide-y divide-black/10 dark:divide-white/10">
+          {MILESTONES.map((m) => (
+            <li key={m.id} className="flex items-center gap-3 py-2.5 text-sm">
+              <span
+                aria-hidden
+                className={
+                  m.done
+                    ? "size-1.5 rounded-full bg-emerald-500"
+                    : "size-1.5 rounded-full bg-black/20 dark:bg-white/20"
+                }
+              />
+              <span className="font-mono text-xs text-black/45 dark:text-white/45">
+                {m.id}
+              </span>
+              <span className={m.done ? "" : "text-black/55 dark:text-white/55"}>
+                {m.name}
+              </span>
+              {m.done && (
+                <span className="ml-auto text-xs text-emerald-600 dark:text-emerald-400">
+                  done
+                </span>
+              )}
+            </li>
+          ))}
+        </ul>
+      </section>
+    </main>
   );
 }
