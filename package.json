@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "next typegen && tsc --noEmit",
     "db:up": "docker compose up -d",
     "db:down": "docker compose down",
     "db:reset": "docker compose down -v && docker compose up -d",
@@ -15,7 +15,8 @@
     "db:migrate": "drizzle-kit migrate",
     "db:studio": "drizzle-kit studio",
     "check:db": "tsx --env-file=.env.local scripts/check-db.ts",
-    "check:anthropic": "tsx --env-file=.env.local scripts/check-anthropic.ts"
+    "check:anthropic": "tsx --env-file=.env.local scripts/check-anthropic.ts",
+    "ingest": "tsx --env-file=.env.local scripts/ingest-catalog.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.115.0",

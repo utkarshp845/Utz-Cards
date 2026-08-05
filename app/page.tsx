@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { sql } from "drizzle-orm";
 
 import { db } from "@/db";
@@ -44,10 +45,20 @@ export default async function Home() {
 
   return (
     <main className="mx-auto w-full max-w-2xl flex-1 px-6 py-16">
-      <h1 className="text-2xl font-semibold tracking-tight">UtzCards</h1>
-      <p className="mt-1 text-sm text-black/60 dark:text-white/60">
-        Sports card intake, identification, pricing, and fulfillment.
-      </p>
+      <div className="flex items-baseline justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">UtzCards</h1>
+          <p className="mt-1 text-sm text-black/60 dark:text-white/60">
+            Sports card intake, identification, pricing, and fulfillment.
+          </p>
+        </div>
+        <Link
+          href="/search"
+          className="shrink-0 text-sm underline underline-offset-4 hover:text-black dark:hover:text-white"
+        >
+          Search →
+        </Link>
+      </div>
 
       <section className="mt-10">
         <h2 className="text-xs font-medium uppercase tracking-wider text-black/50 dark:text-white/50">
