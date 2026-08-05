@@ -103,15 +103,40 @@ stops matching the index's operator class and forces a sequential scan
 this matters; if search ever gets slow at scale, that's the first thing to
 check.
 
-## What's still unverified
+## Confirmed with real embeddings
 
-Everything above was checked against the real Postgres database with
-synthetic vectors, specifically so the DB-side plumbing (upsert idempotency,
-the vector column round-trip through Drizzle, the raw SQL in
-`lib/search.ts`, and the index/planner behavior) is confirmed correct
-independent of Voyage. What's *not* yet verified is whether Voyage's real
-embeddings actually cluster sports-card text the way you'd want — that
-needs a real `VOYAGE_API_KEY`, a real `npm run ingest`, and a real search on
-`/search`. Do that next; if a plain-English query like "haaland gold
-parallel" doesn't surface Haaland's gold-parallel cards near the top, that's
-the signal to come back and revisit `cardToText()`.
+Everything up to here was checked against the real Postgres database with
+*synthetic* vectors — specifically so the DB-side plumbing (upsert
+idempotency, the vector column round-trip through Drizzle, the raw SQL in
+`lib/search.ts`, and the index/planner behavior) was confirmed correct
+independent of Voyage, before spending a single real token on it.
+
+With a real `VOYAGE_API_KEY`, `npm run ingest` embedded the full 360-card
+seed catalog, and searching `/search?q=haaland+gold+parallel` returned:
+
+```
+0.5569  Erling Haaland  2023 Panini Prizm #3 · Gold · Soccer                (/10)
+0.5657  Erling Haaland  2022 Topps Chrome UEFA Club Competitions #35 · Gold  (/10)
+0.5716  Erling Haaland  2023 Topps Chrome UEFA Club Competitions #28 · Gold  RC (/10)
+0.5737  Erling Haaland  2022 Panini Prizm #220 · Gold                       RC AUTO (/10)
+0.6091  Erling Haaland  2022 Topps Chrome UEFA Club Competitions #112 · Silver
+...
+0.6966  Jamal Musiala   2023 Panini Prizm #269 · Gold                       (/10)
+```
+
+The top four are exactly right: Haaland, Gold, `/10` — and clustered tightly
+(0.5569–0.5737) before a clear jump to the first Silver Haaland card at
+0.6091. The more telling detail is *underneath* that: Silver Haaland cards
+(0.61–0.65) all rank **above** Gold cards belonging to other players
+(0.6966+). If the model were just keyword-matching "gold," those would be
+reversed. It's correctly weighing player identity and parallel type
+together — which is the actual claim an embedding model makes, now checked
+against real output instead of assumed.
+
+One operational thing worth knowing, hit live while verifying this: Voyage
+throttles accounts with no payment method on file to **3 requests/minute**.
+A full-catalog `npm run ingest` can burn through that budget on its own
+(each batch of ≤128 cards is one request), so a `/search` query run
+immediately after will 429 — not a bug, just the same minute's budget
+already spent. It clears within a minute; the 200M free tokens apply either
+way, with or without a card on file.

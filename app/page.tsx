@@ -32,7 +32,7 @@ async function getHealth(): Promise<Health> {
 
 const MILESTONES = [
   { id: "M0", name: "Foundation", done: true },
-  { id: "M1", name: "Embeddings + vector search", done: false },
+  { id: "M1", name: "Embeddings + vector search", done: true },
   { id: "M2", name: "Hybrid retrieval + evals", done: false },
   { id: "M3", name: "Vision intake", done: false },
   { id: "M4", name: "Multi-source pricing", done: false },

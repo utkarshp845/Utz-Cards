@@ -16,6 +16,7 @@
     "db:studio": "drizzle-kit studio",
     "check:db": "tsx --env-file=.env.local scripts/check-db.ts",
     "check:anthropic": "tsx --env-file=.env.local scripts/check-anthropic.ts",
+    "check:voyage": "tsx --env-file=.env.local scripts/check-voyage.ts",
     "ingest": "tsx --env-file=.env.local scripts/ingest-catalog.ts"
   },
   "dependencies": {

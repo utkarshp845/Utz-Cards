@@ -38,6 +38,7 @@ M1 onward. eBay and EasyPost keys aren't needed until M4 and M6.
 | `npm run db:studio` | Drizzle Studio |
 | `npm run check:db` | Database smoke test |
 | `npm run check:anthropic` | Claude connectivity smoke test |
+| `npm run check:voyage` | Voyage connectivity smoke test — cheap, run before a full `ingest` |
 | `npm run ingest` | Embed + index the catalog (idempotent — safe to re-run) |
 
 ## Layout
@@ -89,8 +90,8 @@ business that depends on this tool.
 
 ## Status
 
-M0 (foundation) is done. M1 (embeddings + vector search) is built and
-DB-side-verified, but end-to-end verification is blocked on a
-`VOYAGE_API_KEY` — see [`docs/concepts/01-embeddings.md`](docs/concepts/01-embeddings.md)
-for exactly what's confirmed vs. still open. See the roadmap on the home
+M0 (foundation) and M1 (embeddings + vector search) are done, verified with a
+real Voyage-embedded catalog and real search results — see
+[`docs/concepts/01-embeddings.md`](docs/concepts/01-embeddings.md). See the
+roadmap on the home
 page.
